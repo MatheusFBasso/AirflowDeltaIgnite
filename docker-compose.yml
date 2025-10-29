@@ -1,0 +1,175 @@
+version: '3.8'
+
+services:
+  spark-master:
+    build: .
+    image: custom-spark-delta:3.5.7
+    container_name: spark-master
+    entrypoint: ['./entrypoint.sh', 'master']
+    ports:
+      - '8080:8080'
+      - '7077:7077'
+    volumes:
+      - ./data:/opt/spark/data
+      - ./data:/opt/airflow/data
+      - spark-logs:/opt/spark/spark-events
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+    networks:
+      - spark-airflow-net
+
+  spark-worker:
+    image: custom-spark-delta:3.5.7
+    container_name: spark-worker
+    entrypoint: ['./entrypoint.sh', 'worker']
+    depends_on:
+      - spark-master
+    volumes:
+      - ./data:/opt/spark/data
+      - ./data:/opt/airflow/data
+      - spark-logs:/opt/spark/spark-events
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_WORKER_CORES=10
+      - SPARK_WORKER_MEMORY=16g
+    networks:
+      - spark-airflow-net
+
+  spark-history:
+    image: custom-spark-delta:3.5.7
+    container_name: spark-history
+    entrypoint: ['./entrypoint.sh', 'history']
+    depends_on:
+      - spark-master
+    ports:
+      - '18080:18080'
+    volumes:
+      - spark-logs:/opt/spark/spark-events
+    environment:
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=/opt/spark/spark-events
+    networks:
+      - spark-airflow-net
+
+  jupyter:
+    image: custom-spark-delta:3.5.7
+    container_name: jupyter
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --ServerApp.token=''
+    ports:
+      - '8888:8888'
+    volumes:
+      - ./notebooks:/notebooks
+      - ./data:/opt/spark/data
+      - ./etl:/etl
+      - ./tests:/tests
+      - spark-logs:/opt/spark/spark-events
+    depends_on:
+      - spark-master
+    working_dir: /notebooks
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    networks:
+      - spark-airflow-net
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - spark-airflow-net
+
+  airflow-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+      args:
+        - AIRFLOW_VERSION=${AIRFLOW_VERSION}
+        - PYTHON_VERSION=${PYTHON_VERSION}
+    image: custom-airflow:${AIRFLOW_VERSION}
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init &&
+        airflow users create --username airflow --password airflow --firstname Airflow --lastname Admin --role Admin --email admin@example.com &&
+        airflow connections add 'spark_conn' \
+          --conn-type 'spark' \
+          --conn-host 'spark://spark-master' \
+          --conn-port '7077' \
+          --conn-extra '{"queue": "", "deploy-mode": "client"}'
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW_UID=${AIRFLOW_UID}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=mysecretkey
+      - SPARK_MASTER=spark://spark-master:7077
+    networks:
+      - spark-airflow-net
+
+  airflow-scheduler:
+    image: custom-airflow:${AIRFLOW_VERSION}
+    container_name: airflow-scheduler
+    command: airflow scheduler
+    depends_on:
+      - airflow-init
+      - spark-master
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - spark-logs:/opt/spark/spark-events
+      - ./airflow-logs:/opt/airflow/logs
+      - ./etl:/opt/airflow/etl
+      - ./tests:/opt/airflow/tests
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW_UID=${AIRFLOW_UID}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=mysecretkey
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_CONF_DIR=/opt/spark/conf
+      - PYTHONPATH=/opt/airflow/dags:/opt/airflow/etl:/opt/airflow/config
+    networks:
+      - spark-airflow-net
+
+  airflow-webserver:
+    image: custom-airflow:2.10.2
+    container_name: airflow-webserver
+    command: airflow webserver
+    depends_on:
+      - airflow-init
+    ports:
+      - '8081:8080'
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - spark-logs:/opt/spark/spark-events
+      - ./airflow-logs:/opt/airflow/logs
+      - ./etl:/opt/airflow/etl
+      - ./tests:/opt/airflow/tests
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW_UID=${AIRFLOW_UID}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=mysecretkey
+      - SPARK_MASTER=spark://spark-master:7077
+      - PYTHONPATH=/opt/airflow/dags:/opt/airflow/etl:/opt/airflow/config
+    networks:
+      - spark-airflow-net
+
+volumes:
+  spark-logs:
+  postgres-db:
+
+networks:
+  spark-airflow-net:

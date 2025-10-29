@@ -1,0 +1,33 @@
+ARG AIRFLOW_VERSION
+ARG PYTHON_VERSION
+FROM apache/airflow:${AIRFLOW_VERSION}-python${PYTHON_VERSION}
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jdk procps build-essential && \
+    apt-get autoremove -yqq --purge && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ARG SPARK_VERSION=3.5.7
+ARG HADOOP_VERSION=3
+ARG DELTA_VERSION=3.3.2
+RUN mkdir -p /opt/spark && \
+    curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz -o spark.tgz && \
+    tar -xvf spark.tgz -C /opt/spark --strip-components=1 && \
+    rm spark.tgz && \
+    mkdir -p /opt/spark/jars && \
+    curl -s https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/${DELTA_VERSION}/delta-spark_2.12-${DELTA_VERSION}.jar -o /opt/spark/jars/delta-spark_2.12-${DELTA_VERSION}.jar && \
+    curl -s https://repo1.maven.org/maven2/io/delta/delta-storage/${DELTA_VERSION}/delta-storage-${DELTA_VERSION}.jar -o /opt/spark/jars/delta-storage-${DELTA_VERSION}.jar && \
+    curl -s https://repo1.maven.org/maven2/org/antlr/antlr4-runtime/4.9.3/antlr4-runtime-4.9.3.jar -o /opt/spark/jars/antlr4-runtime-4.9.3.jar
+
+COPY requirements.txt /tmp/requirements.txt
+
+USER airflow
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$PATH:${JAVA_HOME}/bin:${SPARK_HOME}/bin:${SPARK_HOME}/sbin
+
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+COPY conf/spark-defaults.conf ${SPARK_HOME}/conf/spark-defaults.conf
+COPY conf/log4j2.properties ${SPARK_HOME}/conf/log4j2.properties

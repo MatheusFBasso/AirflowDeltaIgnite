@@ -1,14 +1,43 @@
-AirflowDeltaIgnite is a containerized data engineering platform using Docker Compose, integrating Apache Airflow 2.10.2 for orchestration, Apache Spark 3.5.7 with Delta Lake 3.3.2 for data lakes, and Jupyter Lab for PySpark development. Optimized for macOS (native ARM64), it supports multi-project ETL pipelines (e.g., Divvy Bikes, Brewery) with Medallion architecture (raw/bronze/silver/gold layers), API ingestion, and data quality checks. Features include automated Spark connection setup, minimized logging (WARN level, suppressed Ivy warnings), and modular code for scalability.
+# AirflowDeltaIgnite  
+**A containerized data engineering platform with Apache Airflow, Spark, and Delta Lake**
 
-#### Scope
-- **Core Components**: Spark cluster for distributed processing; Airflow DAGs for ETL; Jupyter for exploration.
-- **Medallion Layers**: Raw (API landing), Bronze (partitioned Delta), Silver (cleaned/validated), Gold (aggregated insights).
-- **Multi-Project**: Modular folders for isolation and shared utils.
-- **UIs**: Spark (localhost:8080), Airflow (8082), Jupyter (8888).
-- **Limitations**: Dev-focused; standalone Spark; ARM64-optimized.
-- **Use Cases**: Real-time API workflows for transportation/environmental data.
+![AirflowDeltaIgnite](https://img.shields.io/badge/Airflow-2.10.2-blue)  
+![Spark](https://img.shields.io/badge/Spark-3.5.7-green)  
+![Delta Lake](https://img.shields.io/badge/Delta_Lake-3.3.2-purple)  
+![Python](https://img.shields.io/badge/Python-3.11-yellow)  
+![ARM64 Native](https://img.shields.io/badge/ARM64-Native-success)
 
-#### Structure
+---
+
+## Overview
+
+**AirflowDeltaIgnite** is a fully containerized, modular data engineering platform designed for local development on **macOS (Apple Silicon)**. It integrates:
+
+- **Apache Airflow 2.10.2** – Orchestrates ETL workflows via DAGs.
+- **Apache Spark 3.5.7** – Distributed processing with standalone cluster.
+- **Delta Lake 3.3.2** – ACID-compliant data lake with schema enforcement and time travel.
+- **Jupyter Lab** – Interactive PySpark/Delta exploration.
+
+Built for **multi-project ETL pipelines** (e.g., Divvy Bikes, Brewery), it follows the **Medallion architecture** (raw → bronze → silver → gold) with data quality checks and real-time API ingestion.
+
+---
+
+## Key Features
+
+| Feature | Description |
+|-------|-----------|
+| **Medallion Architecture** | Layered data processing: raw (API landing), bronze (partitioned), silver (cleaned), gold (aggregated). |
+| **Multi-Project Support** | Modular structure for multiple datasets in one Airflow instance. |
+| **ARM64 Native** | Optimized for Apple Silicon (M1/M2/M3) – no emulation. |
+| **Log Reduction** | Spark logs set to `WARN`, Ivy/NativeCodeLoader warnings suppressed. |
+| **Automated Setup** | Spark connection (`spark_conn`) created at Airflow init. |
+| **Pre-installed Delta JARs** | No runtime downloads – faster, cleaner logs. |
+| **Jupyter Lab** | Interactive PySpark/Delta notebooks at `localhost:8888`. |
+
+---
+
+## Project Structure
+
 ```
 spark-delta-cluster/
 ├── .env                    # Env vars: SPARK_VERSION=3.5.7, DELTA_VERSION=3.3.2, AIRFLOW_VERSION=2.10.2, PYTHON_VERSION=3.11, AIRFLOW_UID=501
@@ -117,3 +146,89 @@ spark-delta-cluster/
 ├── airflow-logs/           # Airflow/Spark log redirection
 │
 └── notebooks/             # Jupyter notebooks for ad-hoc analysis
+```
+
+---
+
+## Airflow + Spark + Delta Lake Integration
+
+### How It Works
+
+1. **Airflow DAGs** (`dags/`) use `SparkSubmitOperator` to submit PySpark jobs.
+2. **Spark Cluster** (`spark-master`, `spark-worker`) runs in client mode:
+   - Driver: Airflow scheduler container
+   - Executors: Spark worker(s)
+3. **Delta Lake** enables:
+   - ACID transactions
+   - Schema enforcement
+   - Time travel (`VERSION AS OF`)
+4. **ETL Scripts** (`etl/`) use shared `get_spark_session()` with Delta configs.
+5. **Data Quality** checks run in silver layer (nulls, uniqueness).
+6. **Logs** are minimized via:
+   - `verbose=False` in `SparkSubmitOperator`
+   - Log4j `WARN` level
+   - Pre-installed Delta JARs (no Ivy spam)
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Docker Desktop (with Rosetta for ARM64)
+- macOS (Apple Silicon recommended)
+
+### Quick Start
+
+```bash
+# Clone and start
+git clone https://github.com/yourusername/AirflowDeltaIgnite.git
+cd AirflowDeltaIgnite
+docker compose up --build -d
+
+# Access UIs
+- Airflow: http://localhost:8082 (airflow/airflow)
+- Spark Master: http://localhost:8080
+- Jupyter: http://localhost:8888
+```
+
+### Run a DAG
+1. Go to Airflow UI → DAGs → `divvy_bikes_ingestion`
+2. Trigger → Check logs and `./data` for Delta tables.
+
+---
+
+## Adding a New Project
+
+1. Duplicate `dags/divvy_bikes/` → `dags/new_project/`
+2. Duplicate `etl/divvy_bikes/` → `etl/new_project/`
+3. Add config in `config/new_project_config.yaml`
+4. Restart Airflow: `docker compose restart airflow-scheduler`
+
+---
+
+## Examples
+
+### Divvy Bikes
+<img width="2477" height="666" alt="image" src="https://github.com/user-attachments/assets/6d330514-761a-4ce7-8b01-0270dd6d9928" />
+
+#### Extract
+<img width="1124" height="577" alt="image" src="https://github.com/user-attachments/assets/c5e175c7-48d7-4331-8336-3edb615c70d8" />
+
+#### Bronze
+<img width="1114" height="854" alt="image" src="https://github.com/user-attachments/assets/89b15ecf-ac86-4a0b-89af-e232b0f0e5c8" />
+
+#### Silver
+<img width="1002" height="824" alt="image" src="https://github.com/user-attachments/assets/6ad91df3-db89-45be-9421-b9dfea1d350b" />
+
+#### Gold
+<img width="1002" height="758" alt="image" src="https://github.com/user-attachments/assets/26df5a86-4551-4566-915d-0e3074894907" />
+
+---
+
+## License
+
+MIT
+
+---
+
+**AirflowDeltaIgnite** – Ignite your data pipelines with Airflow, Spark, and Delta Lake.

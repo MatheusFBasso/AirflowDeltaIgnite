@@ -39,7 +39,7 @@ Built for **multi-project ETL pipelines** (e.g., Divvy Bikes, Brewery), it follo
 ## Project Structure
 
 ```
-spark-delta-cluster/
+AirflowDeltaIgnite/
 ├── .env                    # Env vars: SPARK_VERSION=3.5.7, DELTA_VERSION=3.3.2, AIRFLOW_VERSION=2.10.2, PYTHON_VERSION=3.11, AIRFLOW_UID=501
 │
 ├── Dockerfile              # Spark + Delta + Jupyter (Python 3.11, ARM64)
@@ -63,31 +63,53 @@ spark-delta-cluster/
 │   │
 │   ├── raw_data/           # API landing (e.g., divvy_bikes/free_bike_status/)
 │   │   ├── divvy_bikes/
+│   │   ├── olist/
 │   │   └── brewery/
 │   │
 │   └── warehouse/
 │       │
 │       ├── bronze.db/
-│       │   └── divvy_bikes/
+│       │   ├── olist/
+│       │   ├── olist_customers_dataset
+│       │   ├── olist_geolocation_dataset
+│       │   ├── olist_order_items_dataset
+│       │   ├── olist_order_payments_dataset
+│       │   ├── olist_order_reviews_dataset
+│       │   ├── olist_orders_dataset
+│       │   ├── olist_products_dataset
+│       │   ├── olist_sellers_dataset
+│       │   └── product_category_name_translation
 │       │
 │       ├── silver.db/
-│       │   └── divvy_bikes_status/
-│       │   └── divvy_station_information/
-│       │   └── divvy_station_status/
-│       │   └── divvy_system_pricing_plan/
-│       │   └── divvy_vehicle_types/
+│       │   ├── divvy_bikes_status/
+│       │   ├── divvy_station_information/
+│       │   ├── divvy_station_status/
+│       │   ├── divvy_system_pricing_plan/
+│       │   ├── divvy_vehicle_types/
+│       │   ├── olist_customers_dataset
+│       │   ├── olist_geolocation_dataset
+│       │   ├── olist_order_items_dataset
+│       │   ├── olist_order_payments_dataset
+│       │   ├── olist_order_reviews_dataset
+│       │   ├── olist_orders_dataset
+│       │   ├── olist_products_dataset
+│       │   ├── olist_sellers_dataset
+│       │   └── olist_product_category_name_translation
 │       │
 │       └── gold.db/
-│           └── divvy_bikes_status/
-│           └── divvy_station_information/
-│           └── divvy_station_status/
-│           └── divvy_system_pricing_plan/
-│           └── divvy_vehicle_types/
+│           ├── divvy_bikes_status/
+│           ├── divvy_station_information/
+│           ├── divvy_station_status/
+│           ├── divvy_system_pricing_plan/
+│           ├── divvy_vehicle_types/
+│           ├── olist_delivery_time_table
+│           └── olist_sellers_performance
 │
 ├── dags/                   # Airflow DAGs
 │   ├── __init__.py         # Makes dags a Python package
 │   ├── common/
 │   ├── divvy_bikes/
+│   ├── olist/
 │   └── brewery/
 │
 ├── etl/                    # ETL Python code
@@ -110,10 +132,31 @@ spark-delta-cluster/
 │   │   │   ├── __init__.py
 │   │   │   └── divvy_api.py   # API fetching (requests)
 │   │   │
-│   │   └── ustils/
+│   │   └── utils/
 │   │       ├── __init__.py
-│   │       ├── ClassesCall.py
-│   │       └── Paths.py
+│   │       ├── classes_call.py
+│   │       ├── logo.py
+│   │       └── paths.py
+│   │
+│   ├── olist/
+│   │   ├── transformations/
+│   │   │   ├── __init__.py
+│   │   │   ├── bronze.py
+│   │   │   ├── bronze_to_delta.py
+│   │   │   ├── gold.py
+│   │   │   ├── gold_to_delta.py
+│   │   │   ├── silver.py
+│   │   │   └── silver_to_delta.py
+│   │   │
+│   │   ├── apis/
+│   │   │   ├── __init__.py
+│   │   │   └── olist_api.py   # API fetching (requests)
+│   │   │
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       ├── classes_call.py
+│   │       ├── logo.py
+│   │       └── paths.py
 │   │
 │   └── brewery/
 │       ├── transformations/
@@ -129,10 +172,11 @@ spark-delta-cluster/
 │       │   ├── __init__.py
 │       │   └── brewery_api.py   # API fetching (requests)
 │       │
-│       └── ustils/
+│       └── utils/
 │           ├── __init__.py
-│           ├── ClassesCall.py
-│           └── Paths.py
+│           ├── classes_call.py
+│           ├── logo.py
+│           └── paths.py
 │
 │   
 ├── tests/                  # Unit/integration tests (pytest)

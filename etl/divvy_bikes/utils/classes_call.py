@@ -1,6 +1,6 @@
 import inspect
 
-from divvy_bikes.apis.DivvyBikesAPI import DivvyBikes
+from divvy_bikes.apis.divvy_bikes import DivvyBikes
 from divvy_bikes.transformations.bronze import Bronze
 from divvy_bikes.transformations.silver import Silver
 

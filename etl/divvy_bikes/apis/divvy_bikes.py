@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 
 from common.utils import Now
-from divvy_bikes.utils.Paths import raw_bronze as RAW_BRONZ
+from divvy_bikes.utils.paths import raw_bronze as RAW_BRONZ
 
 
 class DivvyBikes(Now):

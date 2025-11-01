@@ -4,8 +4,8 @@ from datetime import timedelta
 from airflow.utils.task_group import TaskGroup
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from brewery.utils.ClassesCall import BreweryCall
-from brewery.utils.Paths import raw_bronze as BRONZE_PATH_RAW_DATA
+from brewery.utils.classes_call import BreweryCall
+from brewery.utils.paths import raw_bronze as BRONZE_PATH_RAW_DATA
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 
@@ -22,7 +22,7 @@ def get_bash_command(is_post: bool = False) -> str:
     prefix = "postclean" if is_post else "bkp"
     bash_command = """
             # Retrieve parameters
-            path="{{ params.base_path }}/"
+            path="{{ params.base_path }}"
             file_pattern="{{ params.file_pattern }}"
             n_days="{{ params.n_days }}"
 
@@ -82,7 +82,7 @@ with DAG(
     params={
         'base_path': f'/opt/airflow/{BRONZE_PATH_RAW_DATA}',
         'file_pattern': 'PART_*.json',
-        'n_days': '7',
+        'n_days': '1',
     },
     dagrun_timeout=timedelta(minutes=5.0),
 ) as dag:
@@ -145,4 +145,4 @@ with DAG(
             )
 
             # Chain tasks: pre_clean >> extract >> bronze >> post_clean
-            pre_clean >> extract_task >> silver_task >> pos_clean
+            pre_clean >> extract_task >> silver_task >> gold_task >> pos_clean

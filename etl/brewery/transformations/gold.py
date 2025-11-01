@@ -1,9 +1,8 @@
 from common.DeltaSpark import DeltaSpark
-from delta.tables import DeltaTable
-from common.utils import Now
-from pyspark.sql.functions import col, lit, cast
+from common.utils import Now, delta_logos
+from brewery.utils.logo import spark_logo, brewery_logo
+from pyspark.sql.functions import lit
 from pyspark.sql.types import DateType
-from datetime import datetime
 from pyspark.sql import SparkSession
 from datetime import datetime
 
@@ -13,18 +12,9 @@ class Gold(Now):
 
     def __init__(self, spark: SparkSession=None):
 
-        print(f"┌{'─' * 118}┐")
-        print(f"│{' ' * 33}                                                                     {' '*16}│")
-        print(f"│{' ' * 33}   █████████     ███████    █████       ██████████                   {' '*16}│")
-        print(f"│{' ' * 33}  ███░░░░░███  ███░░░░░███ ░░███       ░░███░░░░███                  {' '*16}│")
-        print(f"│{' ' * 33} ███     ░░░  ███     ░░███ ░███        ░███   ░░███                 {' '*16}│")
-        print(f"│{' ' * 33}░███         ░███      ░███ ░███        ░███    ░███                 {' '*16}│")
-        print(f"│{' ' * 33}░███    █████░███      ░███ ░███        ░███    ░███                 {' '*16}│")
-        print(f"│{' ' * 33}░░███  ░░███ ░░███     ███  ░███      █ ░███    ███                  {' '*16}│")
-        print(f"│{' ' * 33} ░░█████████  ░░░███████░   ███████████ ██████████ BREWERY TYPE TOTAL{' '*16}│")
-        print(f"│{' ' * 33}  ░░░░░░░░░     ░░░░░░░    ░░░░░░░░░░░ ░░░░░░░░░░                    {' '*16}│")
-        print(f"│{' ' * 33}                                                                     {' '*16}│")
-        print(f"└{'─' * 118}┘")
+        delta_logos('gold')
+        brewery_logo()
+        spark_logo()
 
         if not spark:
             self.spark: SparkSession = DeltaSpark().initialize()

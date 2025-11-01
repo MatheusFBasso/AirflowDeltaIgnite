@@ -4,31 +4,16 @@ from datetime import timedelta
 from airflow.utils.task_group import TaskGroup
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from divvy_bikes.utils.classes_call import DivvyBikesCall
-from divvy_bikes.utils.paths import raw_bronze as BRONZE_PATH_RAW_DATA
+from olist.utils.classes_call import OlistClassesCall
+from olist.utils.paths import raw_bronze as BRONZE_PATH_RAW_DATA
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
-
-
-# List of extraction types with their specific paths
-extractions = [
-    {
-        'id': 'bike_status',
-        'path_suffix': 'bike_status',
-        'python_callable': lambda **kwargs: DivvyBikesCall('get_raw_data', **kwargs)
-    },
-    {
-        'id': 'station_status',
-        'path_suffix': 'station_status',
-        'python_callable': lambda **kwargs: DivvyBikesCall('get_raw_data', **kwargs)
-    },
-]
 
 # Function to generate bash command for cleaning (used for both pre and post)
 def get_bash_command(path_name: str, is_post: bool = False) -> str:
     prefix = "postclean" if is_post else "bkp"
     bash_command = """
             # Retrieve parameters
-            path="{{ params.base_path }}""" + path_name + """/"
+            path="{{ params.base_path }}""" + path_name + """"
             file_pattern="{{ params.file_pattern }}"
             n_days="{{ params.n_days }}"
 
@@ -77,57 +62,73 @@ def get_bash_command(path_name: str, is_post: bool = False) -> str:
 
 # DAG definition
 with DAG(
-    dag_id='DivvyBikesDagStatus',
-    schedule='*/20 * * * *',
+    dag_id='OlistDag',
+    schedule='0 9 * * *',
     max_active_tasks=2,
     start_date=pendulum.datetime(2024, 2, 10, tz='America/Sao_Paulo'),
     catchup=False,
     max_active_runs=1,
     description='Divvy Bikes DAG for multi-hop architecture in Spark Delta Tables.',
-    tags=['DivvyBikes', 'DeltaTable', 'Spark', 'Status'],
+    tags=['DivvyBikes', 'DeltaTable', 'Spark', 'Information', 'Pricing'],
     params={
         'base_path': f'/opt/airflow/{BRONZE_PATH_RAW_DATA}',
-        'file_pattern': 'extracted_at_*',
-        'n_days': '7',
+        'file_pattern': '*.csv',
+        'n_days': '0',
     },
     dagrun_timeout=timedelta(minutes=5.0),
 ) as dag:
     # Dynamically create tasks for each extraction type
-    for extraction in extractions:
-        with TaskGroup(group_id=extraction['id']) as tg:
-            pre_clean = BashOperator(
-                task_id=f'pre_clean_{extraction["id"]}',
-                bash_command=get_bash_command(path_name=extraction['path_suffix'], is_post=False)
-            )
 
-            extract_task = PythonOperator(
-                task_id=f'extract_{extraction["id"]}',
-                python_callable=extraction['python_callable'],
-                op_kwargs={'func': extraction["id"]},
-                max_active_tis_per_dag=1,
-            )
+    pre_clean = BashOperator(
+        task_id=f'pre_clean_olist_raw_data',
+        bash_command=get_bash_command(path_name='', is_post=False)
+    )
 
-            bronze_task = SparkSubmitOperator(
-                task_id=f'bronze_{extraction["id"]}',
-                application='/opt/airflow/etl/divvy_bikes/transformations/bronze_to_delta.py',
-                conn_id='spark_conn',
-                deploy_mode='client',
-                executor_cores=5,
-                total_executor_cores=5,
-                driver_memory='8G',
-                executor_memory='8G',
-                conf={
-                    'spark.sql.debug.maxToStringFields': '1000',
-                },
-                name=f'divvy-bronze-{extraction["id"]}',
-                verbose=False,
-                application_args=[extraction['id']],
-                dag=dag
-            )
+    pos_clean = BashOperator(
+        task_id=f'pos_clean_olist_raw_data',
+        bash_command=get_bash_command(path_name='', is_post=True)
+    )
 
+    with TaskGroup(group_id='raw_to_bronze') as tgb:
+
+
+        extract_task = PythonOperator(
+            task_id=f'extract_olist_raw_data',
+            python_callable=lambda **kwargs: OlistClassesCall('get_raw_data',
+                owner_slug= 'olistbr',
+                dataset_slug='brazilian-ecommerce',
+                extract_dir= BRONZE_PATH_RAW_DATA),
+            provide_context=True,
+            max_active_tis_per_dag=1,
+        )
+
+        bronze_task = SparkSubmitOperator(
+            task_id=f'raw_to_bronze',
+            application='/opt/airflow/etl/olist/transformations/bronze_to_delta.py',
+            conn_id='spark_conn',
+            deploy_mode='client',
+            executor_cores=8,
+            total_executor_cores=8,
+            driver_memory='10G',
+            executor_memory='10G',
+            conf={
+                'spark.sql.debug.maxToStringFields': '1000',
+            },
+            name=f'olist-bronze-data',
+            verbose=False,
+            application_args=['olist_bronze'],
+            dag=dag
+        )
+
+        extract_task >> bronze_task
+
+    with TaskGroup(group_id=f'bronze_to_silver') as tgs:
+        for table in ['olist_customers_dataset', 'olist_geolocation_dataset', 'olist_order_items_dataset',
+                      'olist_order_payments_dataset', 'olist_order_reviews_dataset', 'olist_orders_dataset',
+                      'olist_products_dataset', 'olist_sellers_dataset', 'product_category_name_translation']:
             silver_task = SparkSubmitOperator(
-                task_id=f'silver_{extraction["id"]}',
-                application='/opt/airflow/etl/divvy_bikes/transformations/silver_to_delta.py',
+                task_id=f'silver_{table}',
+                application='/opt/airflow/etl/olist/transformations/silver_to_delta.py',
                 conn_id='spark_conn',
                 deploy_mode='client',
                 executor_cores=5,
@@ -137,16 +138,17 @@ with DAG(
                 conf={
                     'spark.sql.debug.maxToStringFields': '1000',
                 },
-                name=f'divvy-silver-{extraction["id"]}',
+                name=f'divvy-silver-{table}',
                 verbose=False,
-                application_args=['silver_' + extraction['id']],
+                application_args=[table],
                 dag=dag
             )
 
-
-            gold_task = SparkSubmitOperator(
-                task_id=f'gold_{extraction["id"]}',
-                application='/opt/airflow/etl/divvy_bikes/transformations/gold_to_delta.py',
+    with TaskGroup(group_id=f'silver_to_gold') as tgg:
+        for table in ['delivery_time_table', 'sellers_performance']:
+            silver_task = SparkSubmitOperator(
+                task_id=f'gold_{table}',
+                application='/opt/airflow/etl/olist/transformations/gold_to_delta.py',
                 conn_id='spark_conn',
                 deploy_mode='client',
                 executor_cores=5,
@@ -156,16 +158,11 @@ with DAG(
                 conf={
                     'spark.sql.debug.maxToStringFields': '1000',
                 },
-                name=f'divvy-gold-{extraction["id"]}',
+                name=f'divvy-gold-{table}',
                 verbose=False,
-                application_args=['gold_' + extraction['id']],
+                application_args=[table],
                 dag=dag
             )
 
-            post_clean = BashOperator(
-                task_id=f'post_clean_{extraction["id"]}',
-                bash_command=get_bash_command(path_name=extraction['path_suffix'], is_post=True)
-            )
-
-            # Chain tasks: pre_clean >> extract >> bronze >> post_clean
-            pre_clean >> extract_task >> bronze_task >> silver_task >> gold_task >> post_clean
+    tgb >> pos_clean
+    pre_clean >> tgb >> tgs >> tgg

@@ -1,10 +1,11 @@
-from common.utils import Now
+from common.utils import Now, delta_logos
 from delta.tables import DeltaTable
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 from common.DeltaSpark import DeltaSpark
+from divvy_bikes.utils.paths import spark_path
 from pyspark.sql import DataFrame as SparkDataFrame
-from divvy_bikes.utils.Paths import spark_path
+from divvy_bikes.utils.divvy_logo import divvy_logo, spark_logo
 from pyspark.sql.types import (StructType, StructField, StringType, DoubleType, TimestampType,
                                BooleanType, LongType)
 
@@ -21,21 +22,9 @@ class Gold(Now):
         else:
             self.spark: SparkSession = spark
 
-        print(f"┌{'─' * 118}┐")
-        print('_' * 19 + r"_____/\\\\\\\\\\\\_______/\\\\\_______/\\\______________/\\\\\\\\\\\\____________" + '_' * 20)
-        print('_' * 19 + r"____/\\\//////////______/\\\///\\\____\/\\\_____________\/\\\////////\\\_________" + '_' * 20)
-        print('_' * 19 + r"____/\\\_______________/\\\/__\///\\\__\/\\\_____________\/\\\______\//\\\_______" + '_' * 20)
-        print('_' * 19 + r"____\/\\\____/\\\\\\\__/\\\______\//\\\_\/\\\_____________\/\\\_______\/\\\______" + '_' * 20)
-        print('_' * 19 + r"_____\/\\\___\/////\\\_\/\\\_______\/\\\_\/\\\_____________\/\\\_______\/\\\_____" + '_' * 20)
-        print('_' * 19 + r"______\/\\\_______\/\\\_\//\\\______/\\\__\/\\\_____________\/\\\_______\/\\\____" + '_' * 20)
-        print('_' * 19 + r"_______\/\\\_______\/\\\__\///\\\__/\\\____\/\\\_____________\/\\\_______/\\\____" + '_' * 20)
-        print('_' * 19 + r"________\//\\\\\\\\\\\\/_____\///\\\\\/_____\/\\\\\\\\\\\\\\\_\/\\\\\\\\\\\\/____" + '_' * 20)
-        print('_' * 19 + r"__________\////////////_________\/////_______\///////////////__\////////////_____" + '_' * 20)
-        print(f"│{' ' * 32} ,---.               |                              {' ' * 34}│")
-        print(f"│{' ' * 32} `---.,---.,---.,---.|__/                     __o   {' ' * 34}│")
-        print(f"│{' ' * 32}     ||   |,---||    |  \                   _ \\<_   {' ' * 34}│")
-        print(f"│{' ' * 32} `---'|---'`---^`    `   ` 3.5.7    ...... (_)/(_)  {' ' * 34}│")
-        print(f"└{'─' * 118}┘")
+        delta_logos('gold')
+        divvy_logo()
+        spark_logo()
         print(self._START_TIME)
 
     def gold_bike_status(self):

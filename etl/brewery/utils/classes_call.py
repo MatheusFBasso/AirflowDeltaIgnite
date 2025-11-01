@@ -1,4 +1,4 @@
-from brewery.apis.BreweryAPI import BreweryAPI
+from brewery.apis.brewery_api import BreweryAPI
 
 
 def func_not_found(func: str) -> None:

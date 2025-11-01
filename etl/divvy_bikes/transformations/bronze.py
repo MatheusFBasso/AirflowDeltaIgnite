@@ -1,10 +1,11 @@
-from common.utils import Now
+from common.utils import Now, delta_logos
 from delta.tables import DeltaTable
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit
 from common.DeltaSpark import DeltaSpark
 from pyspark.sql import DataFrame as SparkDataFrame
-from divvy_bikes.utils.Paths import raw_bronze, spark_path
+from divvy_bikes.utils.paths import raw_bronze, spark_path
+from divvy_bikes.utils.divvy_logo import divvy_logo, spark_logo
 from pyspark.sql.types import StructType, StructField, TimestampType, LongType, StringType
 
 
@@ -27,21 +28,9 @@ class Bronze(Now):
         else:
             self.spark: SparkSession = spark
 
-        print(f"┌{'─'*118}┐")
-        print(r"____/\\\\\\\\\\\\\______/\\\\\\\\\___________/\\\\\_______/\\\\\_____/\\\__/\\\\\\\\\\\\\\\__/\\\\\\\\\\\\\\\___________")
-        print(r"____\/\\\/////////\\\__/\\\///////\\\_______/\\\///\\\____\/\\\\\\___\/\\\_\////////////\\\__\/\\\///////////___________")
-        print(r"_____\/\\\_______\/\\\_\/\\\_____\/\\\_____/\\\/__\///\\\__\/\\\/\\\__\/\\\___________/\\\/___\/\\\_____________________")
-        print(r"______\/\\\\\\\\\\\\\\__\/\\\\\\\\\\\/_____/\\\______\//\\\_\/\\\//\\\_\/\\\_________/\\\/_____\/\\\\\\\\\\\____________")
-        print(r"_______\/\\\/////////\\\_\/\\\//////\\\____\/\\\_______\/\\\_\/\\\\//\\\\/\\\_______/\\\/_______\/\\\///////____________")
-        print(r"________\/\\\_______\/\\\_\/\\\____\//\\\___\//\\\______/\\\__\/\\\_\//\\\/\\\_____/\\\/_________\/\\\__________________")
-        print(r"_________\/\\\_______\/\\\_\/\\\_____\//\\\___\///\\\__/\\\____\/\\\__\//\\\\\\___/\\\/___________\/\\\_________________")
-        print(r"__________\/\\\\\\\\\\\\\/__\/\\\______\//\\\____\///\\\\\/_____\/\\\___\//\\\\\__/\\\\\\\\\\\\\\\_\/\\\\\\\\\\\\\\\____")
-        print(r"___________\/////////////____\///________\///_______\/////_______\///_____\/////__\///////////////__\///////////////____")
-        print(f"│{' ' * 32} ,---.               |                              {' ' * 34}│")
-        print(f"│{' ' * 32} `---.,---.,---.,---.|__/                     __o   {' ' * 34}│")
-        print(f"│{' ' * 32}     ||   |,---||    |  \                   _ \\<_   {' ' * 34}│")
-        print(f"│{' ' * 32} `---'|---'`---^`    `   ` 3.5.7    ...... (_)/(_)  {' ' * 34}│")
-        print(f"└{'─'*118}┘")
+        delta_logos('bronze')
+        divvy_logo()
+        spark_logo()
 
 
     def load_raw_data_to_bronze(self, divvy_path):

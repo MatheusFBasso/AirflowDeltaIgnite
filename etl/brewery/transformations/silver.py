@@ -1,10 +1,11 @@
-from brewery.utils.Paths import raw_bronze as bronze_path_raw_data
+from brewery.utils.paths import raw_bronze as bronze_path_raw_data
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit, col, when, concat, trim, lower, initcap, regexp_replace
 from pyspark.sql.types import StringType, StructType, StructField, DateType, TimestampType, IntegerType, DoubleType
 from datetime import datetime
 from delta.tables import DeltaTable
-from common.utils import Now
+from brewery.utils.logo import spark_logo, brewery_logo
+from common.utils import Now, delta_logos
 from common.DeltaSpark import DeltaSpark
 
 
@@ -34,18 +35,9 @@ class Silver(Now):
 
     def __init__(self, spark: SparkSession=None):
         # --------------------------------------------------------------------------------------------------------------
-        print(f"┌{'─' * 118}┐")
-        print(f"│{' ' * 24}                                                                             {' ' * 17}│")
-        print(f"│{' ' * 24}  █████████  █████ █████       █████   █████ ██████████ ███████████          {' ' * 17}│")
-        print(f"│{' ' * 24} ███░░░░░███░░███ ░░███       ░░███   ░░███ ░░███░░░░░█░░███░░░░░███         {' ' * 17}│")
-        print(f"│{' ' * 24}░███    ░░░  ░███  ░███        ░███    ░███  ░███  █ ░  ░███    ░███         {' ' * 17}│")
-        print(f"│{' ' * 24}░░█████████  ░███  ░███        ░███    ░███  ░██████    ░██████████          {' ' * 17}│")
-        print(f"│{' ' * 24} ░░░░░░░░███ ░███  ░███        ░░███   ███   ░███░░█    ░███░░░░░███         {' ' * 17}│")
-        print(f"│{' ' * 24} ███    ░███ ░███  ░███      █  ░░░█████░    ░███ ░   █ ░███    ░███         {' ' * 17}│")
-        print(f"│{' ' * 24}░░█████████  █████ ███████████    ░░███      ██████████ █████   █████ BREWERY{' ' * 17}│")
-        print(f"│{' ' * 24} ░░░░░░░░░  ░░░░░ ░░░░░░░░░░░      ░░░      ░░░░░░░░░░ ░░░░░   ░░░░░         {' ' * 17}│")
-        print(f"│{' ' * 24}                                                                             {' ' * 17}│")
-        print(f"└{'─' * 118}┘")
+        delta_logos('silver')
+        brewery_logo()
+        spark_logo()
         # --------------------------------------------------------------------------------------------------------------
 
         if not spark:

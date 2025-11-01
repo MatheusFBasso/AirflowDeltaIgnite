@@ -4,8 +4,8 @@ from datetime import timedelta
 from airflow.utils.task_group import TaskGroup
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from divvy_bikes.utils.ClassesCall import DivvyBikesCall
-from divvy_bikes.utils.Paths import raw_bronze as BRONZE_PATH_RAW_DATA
+from divvy_bikes.utils.classes_call import DivvyBikesCall
+from divvy_bikes.utils.paths import raw_bronze as BRONZE_PATH_RAW_DATA
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 

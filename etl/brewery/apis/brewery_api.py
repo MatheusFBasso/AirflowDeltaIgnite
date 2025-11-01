@@ -1,5 +1,5 @@
 from common.utils import Now
-from brewery.utils.Paths import raw_bronze
+from brewery.utils.paths import raw_bronze
 
 from collections import Counter
 from datetime import datetime

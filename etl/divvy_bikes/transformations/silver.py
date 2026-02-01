@@ -1,11 +1,11 @@
 from datetime import datetime
 from pyspark.sql import SparkSession
 from common.DeltaSpark import DeltaSpark
-from common.utils import Now, delta_logos
 from divvy_bikes.utils.paths import spark_path
 from pyspark.sql.functions import explode, col, max
 from pyspark.sql import DataFrame as SparkDataFrame
-from divvy_bikes.utils.divvy_logo import divvy_logo, spark_logo
+from divvy_bikes.utils.logo import divvy_logo, spark_logo
+from common.utils import Now, delta_logos, safe_save_to_delta
 from pyspark.sql.types import DoubleType, StringType, BooleanType, TimestampType, LongType
 
 
@@ -31,7 +31,7 @@ class Silver(Now):
         df: SparkDataFrame = (
             self.spark.read.format("delta")
             .load(f'{spark_path}/data/warehouse/bronze.db/divvy_bikes')
-            .filter(col('type') == 'free_bike_status')
+            .filter(col('type') == 'bike_status')
             .orderBy('last_updated_ts', ascending=False)
         )
         df: SparkDataFrame = df.filter(col('last_updated_ts') == df.select(max('last_updated_ts')).collect()[0][0])
@@ -59,13 +59,12 @@ class Silver(Now):
         # --------------------------------------------------------------------------------------------------------------
 
         # --------------------------------------------------------------------------------------------------------------
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_bikes_status', start=True)
-        (df.write.format('delta')
-         .mode('append')
-         .option('overwriteSchema', 'True')
-         .save(f'{spark_path}/data/warehouse/silver.db/divvy_bikes_status')
-         )
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_bikes_status | OK', end=True)
+        safe_save_to_delta(df=df,
+                           delta_layer='silver',
+                           table_name='divvy_bikes_status',
+                           mode='append',
+                           spark_path=spark_path,
+                           merge_schema=True)
         # --------------------------------------------------------------------------------------------------------------
 
         self.spark.stop()
@@ -103,13 +102,12 @@ class Silver(Now):
         # --------------------------------------------------------------------------------------------------------------
 
         # --------------------------------------------------------------------------------------------------------------
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_station_information', start=True)
-        (df.write.format('delta')
-         .mode('append')
-         .option('overwriteSchema', 'True')
-         .save(f'{spark_path}/data/warehouse/silver.db/divvy_station_information')
-         )
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_station_information | OK', end=True)
+        safe_save_to_delta(df=df,
+                           delta_layer='silver',
+                           table_name='divvy_station_information',
+                           mode='append',
+                           spark_path=spark_path,
+                           merge_schema=True)
         # --------------------------------------------------------------------------------------------------------------
 
         self.spark.stop()
@@ -156,13 +154,12 @@ class Silver(Now):
         # --------------------------------------------------------------------------------------------------------------
 
         # --------------------------------------------------------------------------------------------------------------
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_station_status', start=True)
-        (df.write.format('delta')
-         .mode('append')
-         .option('overwriteSchema', 'True')
-         .save(f'{spark_path}/data/warehouse/silver.db/divvy_station_status')
-         )
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_station_status | OK', end=True)
+        safe_save_to_delta(df=df,
+                           delta_layer='silver',
+                           table_name='divvy_station_status',
+                           mode='append',
+                           spark_path=spark_path,
+                           merge_schema=True)
         # --------------------------------------------------------------------------------------------------------------
 
         # --------------------------------------------------------------------------------------------------------------
@@ -202,13 +199,12 @@ class Silver(Now):
         # --------------------------------------------------------------------------------------------------------------
 
         # --------------------------------------------------------------------------------------------------------------
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_system_pricing_plan', start=True)
-        (df.write.format('delta')
-         .mode('append')
-         .option('overwriteSchema', 'True')
-         .save(f'{spark_path}/data/warehouse/silver.db/divvy_system_pricing_plan')
-         )
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_system_pricing_plan | OK', end=True)
+        safe_save_to_delta(df=df,
+                           delta_layer='silver',
+                           table_name='divvy_system_pricing_plan',
+                           mode='append',
+                           spark_path=spark_path,
+                           merge_schema=True)
         # --------------------------------------------------------------------------------------------------------------
 
     def silver_vehicle_types(self):
@@ -243,14 +239,12 @@ class Silver(Now):
         # --------------------------------------------------------------------------------------------------------------
 
         # --------------------------------------------------------------------------------------------------------------
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_vehicle_types', start=True)
-        print(df.printSchema())
-        (df.write.format('delta')
-         .mode('append')
-         .option('overwriteSchema', 'True')
-         .save(f'{spark_path}/data/warehouse/silver.db/divvy_vehicle_types')
-         )
-        self.log_message(show=self._SHOW_LOG, message='SAVING DATA | silver.divvy_vehicle_types | OK', end=True)
+        safe_save_to_delta(df=df,
+                           delta_layer='silver',
+                           table_name='divvy_vehicle_types',
+                           mode='append',
+                           spark_path=spark_path,
+                           merge_schema=True)
         # --------------------------------------------------------------------------------------------------------------
 
         self.spark.stop()

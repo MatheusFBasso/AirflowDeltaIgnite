@@ -1,5 +1,4 @@
-from common.utils import Now, delta_logos
-from delta.tables import DeltaTable
+from common.utils import Now, delta_logos, safe_save_to_delta
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_date
 from common.DeltaSpark import DeltaSpark
@@ -80,7 +79,7 @@ class Silver(Now):
              StructField('seller_city',            StringType(), True),
              StructField('seller_state',           StringType(), True),
              ]),
-        'product_category_name_translation': StructType(
+        'olist_product_category_name_translation': StructType(
             [StructField('product_category_name',         StringType(), False),
              StructField('product_category_name_english', StringType(), False),
              ])
@@ -134,9 +133,10 @@ class Silver(Now):
         # --------------------------------------------------------------------------------------------------------------
 
         # -- STEP 6 ----------------------------------------------------------------------------------------------------
-        self.log_message(show=self._SHOW_LOG, message=f'SAVING TO SILVER | {delta_file_name}', start=True)
-        df.write.format('delta').mode('overwrite').save(f"{spark_path}/data/warehouse/silver.db/{delta_file_name}")
-        self.log_message(show=self._SHOW_LOG, message=f'SAVING TO SILVER | {delta_file_name} | OK', end=True)
+        safe_save_to_delta(df=df,
+                           delta_layer='silver',
+                           table_name=delta_file_name,
+                           spark_path=spark_path)
         # --------------------------------------------------------------------------------------------------------------
 
         return True

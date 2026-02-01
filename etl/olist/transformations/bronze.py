@@ -4,9 +4,9 @@ from datetime import datetime
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit
 from common.DeltaSpark import DeltaSpark
-from common.utils import Now, delta_logos
 from olist.utils.logo import olist_logo, spark_logo
 from olist.utils.paths import raw_bronze, spark_path
+from common.utils import Now, delta_logos, safe_save_to_delta
 
 
 class Bronze(Now):
@@ -32,7 +32,6 @@ class Bronze(Now):
 
 
     def process_files(self, path: str=None) -> bool:
-
         path:str = path if path else raw_bronze
 
         self.log_message(show=self._SHOW_LOG, message=f'LOOKING FOR RAW_DATA AT: {path}', start=True)
@@ -46,21 +45,15 @@ class Bronze(Now):
         self.log_message(show=self._SHOW_LOG, message=f'STARTING TO LOAD CSV FROM {path}', start=True)
         for _file in files_list:
             _table_name:str = Path(_file).stem
-            self.log_message(show=self._SHOW_LOG,
-                             message=f'Loading "{_table_name}.csv" -> Bronze: "{_table_name}"',
-                             sep='.')
-            self.spark.read .option("header", "true")\
-                            .option("inferSchema", "false")\
-                            .format('csv')\
-                            .load(_file)\
-                            .withColumn('dat_ref_carga', lit(self.TODAY))\
-                            .write.format('delta')\
-                            .mode('overwrite') \
-                            .option("mergeSchema", "true")\
-                            .partitionBy("dat_ref_carga")\
-                            .save(f'{spark_path}/data/warehouse/bronze.db/{_table_name}')
-            self.log_message(show=self._SHOW_LOG,
-                             message=f'Loading "{_table_name}.csv" -> Bronze: "{_table_name}" | OK',
-                             sep='.')
-        self.log_message(show=self._SHOW_LOG, message=f'STARTING TO LOAD CSV FROM {path}', end=True)
+            safe_save_to_delta(df=self.spark.read .option("header", "true")\
+                                      .option("inferSchema", "false")\
+                                      .format('csv')\
+                                      .load(_file)\
+                                      .withColumn('dat_ref_carga', lit(self.TODAY)),
+                               delta_layer='bronze',
+                               table_name=_table_name,
+                               mode='overwrite',
+                               merge_schema=True,
+                               partition_by='dat_ref_carga')
+        self.log_message(show=self._SHOW_LOG, message=f'STARTING TO LOAD CSV FROM {path} | OK', end=True)
         return True

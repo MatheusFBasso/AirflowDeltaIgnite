@@ -158,6 +158,10 @@ class KaggleDatasetDownloader(Now):
         # Optional: List extracted files
         extracted_files = os.listdir(extract_dir)
         for _file in [x for x in extracted_files if x.endswith('.csv')]:
+            if not _file.startswith('olist_'):
+                self.log_message(show=self._SHOW, message=f" Renaming {_file} to olist_{_file}", sep='.\\')
+                os.rename(f"{extract_dir}/{_file}", f"{extract_dir}/olist_{_file}")
+                self.log_message(show=self._SHOW, message=f" Renaming {_file} to olist_{_file} | OK", sep='.\\')
             self.log_message(show=self._SHOW, message=f"{_file}", sep='.-.')
 
         self.log_message(show=self._SHOW, message=f"EXTRACTING {dataset_slug} | OK", end=True)

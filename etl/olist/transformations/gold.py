@@ -1,4 +1,4 @@
-from common.utils import Now, delta_logos
+from common.utils import Now, delta_logos, safe_save_to_delta
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, when, lit, datediff
 from common.DeltaSpark import DeltaSpark
@@ -7,6 +7,7 @@ from pyspark.sql import DataFrame as SparkDataFrame
 from olist.utils.logo import olist_logo, spark_logo
 from pyspark.sql.types import DecimalType, DateType, IntegerType
 from datetime import datetime
+
 
 class Gold(Now):
     _SHOW_LOG = True
@@ -116,10 +117,10 @@ class Gold(Now):
         # --------------------------------------------------------------------------------------------------------------
 
         # -- Step 3 ----------------------------------------------------------------------------------------------------
-        self.log_message(show=self._SHOW_LOG, message='SAVING INTO gold.olist_delivery_time_table', start=True)
-        df_orders_sigla.write.format('delta').mode('overwrite')\
-                       .save(f'{spark_path}/data/warehouse/gold.db/olist_delivery_time_table')
-        self.log_message(show=self._SHOW_LOG, message='SAVING INTO gold.olist_delivery_time_table | OK', end=True)
+        safe_save_to_delta(df=df_orders_sigla,
+                           delta_layer='gold',
+                           table_name='olist_delivery_time_table',
+                           spark_path=spark_path)
         # --------------------------------------------------------------------------------------------------------------
         print('')
 
@@ -212,11 +213,11 @@ class Gold(Now):
         # --------------------------------------------------------------------------------------------------------------
 
         # -- Step 4 ----------------------------------------------------------------------------------------------------
-        self.log_message(show=self._SHOW_LOG, message=f'Saving gold.sellers_performance', start=True)
-        df.write.format('delta').mode('overwrite')\
-            .partitionBy('date_ref_carga')\
-            .save(f'{spark_path}/data/warehouse/gold.db/sellers_performance')
-        self.log_message(show=self._SHOW_LOG, message=f'Saving gold.sellers_performance | OK', end=True)
+        safe_save_to_delta(df=df,
+                           delta_layer='gold',
+                           table_name='olist_sellers_performance',
+                           mode='overwrite',
+                           partition_by='date_ref_carga')
         # --------------------------------------------------------------------------------------------------------------
 
         print('')

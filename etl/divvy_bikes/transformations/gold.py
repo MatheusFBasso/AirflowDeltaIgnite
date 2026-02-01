@@ -1,11 +1,11 @@
-from common.utils import Now, delta_logos
 from delta.tables import DeltaTable
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 from common.DeltaSpark import DeltaSpark
 from divvy_bikes.utils.paths import spark_path
 from pyspark.sql import DataFrame as SparkDataFrame
-from divvy_bikes.utils.divvy_logo import divvy_logo, spark_logo
+from divvy_bikes.utils.logo import divvy_logo, spark_logo
+from common.utils import Now, delta_logos, safe_save_to_delta
 from pyspark.sql.types import (StructType, StructField, StringType, DoubleType, TimestampType,
                                BooleanType, LongType)
 

@@ -1,11 +1,11 @@
-from common.utils import Now, delta_logos
+from common.utils import Now, delta_logos, safe_save_to_delta
 from delta.tables import DeltaTable
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit
 from common.DeltaSpark import DeltaSpark
 from pyspark.sql import DataFrame as SparkDataFrame
 from divvy_bikes.utils.paths import raw_bronze, spark_path
-from divvy_bikes.utils.divvy_logo import divvy_logo, spark_logo
+from divvy_bikes.utils.logo import divvy_logo, spark_logo
 from pyspark.sql.types import StructType, StructField, TimestampType, LongType, StringType
 
 
@@ -40,7 +40,7 @@ class Bronze(Now):
                          message=f'LOADING DATA | {raw_bronze + divvy_path}.json -> bronze.divvy_bikes',
                          start=True)
 
-        if not DeltaTable.isDeltaTable(self.spark, f'data/warehouse/bronze.db/divvy_bikes'):
+        if not DeltaTable.isDeltaTable(self.spark, f'{spark_path}/data/warehouse/bronze.db/divvy_bikes'):
             print('Creating Bronze Table')
 
             (self.spark.read.format('json').load(raw_bronze + '/' + divvy_path + '/')
@@ -60,13 +60,20 @@ class Bronze(Now):
                        .withColumn('last_updated_ts', col('last_updated').cast(TimestampType()))
                        .select('type', 'data', 'last_updated', 'ttl', 'version', 'last_updated_ts'))
 
+            safe_save_to_delta(df=df,
+                               delta_layer='bronze',
+                               table_name='divvy_bikes',
+                               mode='append',
+                               partition_by='type',
+                               spark_path=spark_path,
+                               merge_schema=True)
             (df.write.format('delta')
                      .mode('append').option("mergeSchema", "true")
                      .partitionBy('type')
                      .save(f'{spark_path}/data/warehouse/bronze.db/divvy_bikes'))
 
-        self.log_message(show=self._SHOW_LOG,
-                         message=f'LOADING DATA | {divvy_path}.json -> bronze.divvy_{divvy_path} | OK',
-                         end=True)
+        # self.log_message(show=self._SHOW_LOG,
+        #                  message=f'LOADING DATA | {divvy_path}.json -> bronze.divvy_{divvy_path} | OK',
+        #                  end=True)
 
         self.log_message(show=self._SHOW_LOG, message='SAVING BRONZE RAW DATA | OK', start=True, end=True)

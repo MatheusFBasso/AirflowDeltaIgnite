@@ -17,14 +17,17 @@ class DeltaSpark(Now):
     # Delta & Spark Configs
     _SPARK_CONFIGS = {
         "spark.eventLog.enabled": "false",
+        "spark.jars.packages": "io.delta:delta-spark_2.13:4.0.0",
         "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
         "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-        "spark.submit.deployMode": "client"
+        # "spark.submit.deployMode": "client"
     }
 
     _SPARK_CONFIGS_SET = {
         "spark.databricks.delta.schema.autoMerge.enabled": "true",
-        "spark.databricks.delta.retryCommitAttempts": "10"
+        "spark.databricks.delta.retryCommitAttempts": "10",
+        "spark.databricks.delta.retry.maxAttempts": "5",
+        "spark.databricks.delta.retriesOnMetadataChangedException": "true",
     }
 
     def __init__(self, app_name: str = DEFAULT_APP_NAME, warehouse_dir: str = DEFAULT_WAREHOUSE):
@@ -37,6 +40,8 @@ class DeltaSpark(Now):
         self._app_name = app_name
         self._warehouse_path = Path(warehouse_dir)
         self._show_logs = False
+
+        print(self._SPARK_CONFIGS_SET)
 
     def initialize(self, recover_metadata: bool = False) -> SparkSession:
         """
@@ -101,10 +106,13 @@ class DeltaSpark(Now):
                 prefix = "└──" if is_last else "├──"
 
                 # 3. Create Table
-                spark.sql(
-                    f"CREATE TABLE IF NOT EXISTS {db_name}.{table_name} USING DELTA LOCATION '{table_path.as_posix()}'")
+                try:
+                    spark.sql(
+                        f"CREATE TABLE IF NOT EXISTS {db_name}.{table_name} USING DELTA LOCATION '{table_path.as_posix()}'")
 
-                self.log_message(f"  {prefix} {table_name}")
+                    self.log_message(f"  {prefix} {table_name}")
+                except Exception as e:
+                    self.log_message(f"  {prefix} {table_name} | FAILED: {str(e)}")
 
         self.log_message("METADATA TREE RECOVERY | COMPLETED", start=True, sep="=")
 

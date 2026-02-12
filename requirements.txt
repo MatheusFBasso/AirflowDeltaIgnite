@@ -1,7 +1,8 @@
 pip
 apache-airflow==2.10.2
-delta-spark==3.3.2
-apache-airflow-providers-apache-spark==4.11.0
+apache-airflow-providers-apache-spark==4.8.0
+pyspark==4.0.1
+delta-spark==4.0.0
 requests==2.32.5
 pyarrow==22.0.0
 pandas==2.3.3

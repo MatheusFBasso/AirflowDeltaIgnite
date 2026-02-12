@@ -87,9 +87,12 @@ with DAG(
                 executor_memory='6G',
                 retries=4,
                 retry_delay=timedelta(seconds=5),
-                conf={
-                    'spark.sql.debug.maxToStringFields': '1000',
-                },
+                # conf={
+                #     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                #     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                #     "spark.sql.debug.maxToStringFields": "1000"
+                # },
+                # packages="io.delta:delta-spark_2.13:4.0.0",
                 name=f'ghibli-bronze-{extraction["id"]}',
                 verbose=False,
                 application_args=[extraction['id']],
@@ -105,9 +108,12 @@ with DAG(
                 total_executor_cores=5,
                 driver_memory='8G',
                 executor_memory='8G',
-                conf={
-                    'spark.sql.debug.maxToStringFields': '1000',
-                },
+                # conf={
+                #     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                #     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                #     "spark.sql.debug.maxToStringFields": "1000"
+                # },
+                # packages="io.delta:delta-spark_2.13:4.0.0",
                 name=f'ghibli-silver-{extraction["id"]}',
                 verbose=False,
                 application_args=[extraction["id"]],

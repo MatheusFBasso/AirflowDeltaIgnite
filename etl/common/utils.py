@@ -1,7 +1,11 @@
-from typing import Optional
+from pyspark.sql import DataFrame as SparkDataFrame
+from pyspark.sql import SparkSession
+from delta.tables import DeltaTable
+from typing import List, Union
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from pyspark.sql import DataFrame as SparkDataFrame
+from typing import Optional
+from pprint import pprint
 
 
 class Now:
@@ -275,6 +279,86 @@ def safe_save_to_delta(
     now.log_message(show=log, message=f'Saving {delta_layer}.{table_name} | OK', end=True)
 
     return True
+
+
+def delta_upsert(
+        spark_session: SparkSession,
+        match_keys: Union[List[str], str],
+        df: SparkDataFrame,
+        delta_path: str
+) -> None:
+    """
+    Performs a Delta Lake upsert (merge) operation into a target Delta table
+    based on specified match keys.
+
+    This function dynamically generates the merge conditions and update/insert
+    dictionaries based on the input DataFrame's schema. It logs the merge
+    details using the custom `Now()` utility.
+
+    Args:
+        spark_session (SparkSession): The active Spark Session.
+        match_keys (Union[List[str], str]): A single column name or a list of
+            column names to use as the composite primary key for matching.
+        df (DataFrame): The source Spark DataFrame containing the new data.
+        delta_path (str): The file system path to the target Delta table.
+
+    Returns:
+        None: The operation is performed in-place on the Delta table.
+
+    Raises:
+        AnalysisException: If the Delta table does not exist at the path or
+            if there are schema mismatches.
+    """
+    # normalize match_keys to a list if a single string is provided
+    if isinstance(match_keys, str):
+        match_keys = [match_keys]
+
+    # Normalize keys to lowercase for case-insensitive comparison during dict generation
+    match_keys_lower = {k.lower() for k in match_keys}
+    columns = df.columns
+
+    # 1. Define Merge Condition
+    # Example: "as_is.id = as_now.id AND as_is.date = as_now.date"
+    merge_condition = ' AND '.join([f"as_is.{col} = as_now.{col}" for col in match_keys])
+
+    # 2. Define Update Logic (When Matched)
+    # Update all columns EXCEPT the match keys
+    when_matched_update = {
+        col: f"as_now.{col}"
+        for col in columns
+        if col.lower() not in match_keys_lower
+    }
+
+    # 3. Define Insert Logic (When Not Matched)
+    # Insert all columns
+    when_not_matched_insert = {
+        col: f"as_now.{col}"
+        for col in columns
+    }
+
+    # Logging (Assumes Now() class exists in scope)
+    Now().log_message(message=f'UPSERT FOR PATH | {delta_path}', start=True)
+    Now().log_message(message="Merge Conditions")
+    pprint(merge_condition)
+    Now().log_message(message="When Matched Update")
+    pprint(when_matched_update)
+    Now().log_message(message="When Not Matched Insert")
+    pprint(when_not_matched_insert)
+
+    # Initialize DeltaTable
+    delta_table = DeltaTable.forPath(sparkSession=spark_session, path=delta_path)
+
+    # Execute Merge
+    delta_table.alias('as_is') \
+        .merge(
+        source=df.alias('as_now'),
+        condition=merge_condition
+    ) \
+        .whenMatchedUpdate(set=when_matched_update) \
+        .whenNotMatchedInsert(values=when_not_matched_insert) \
+        .execute()
+
+    Now().log_message(message=f'UPSERT FOR PATH | {delta_path} | OK', end=True)
 
 
 def get_bash_command(path_name: str, is_post: bool = False) -> str:

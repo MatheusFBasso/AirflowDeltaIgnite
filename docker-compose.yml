@@ -32,8 +32,8 @@ services:
     environment:
       - SPARK_MASTER_HOST=spark-master
       - SPARK_MASTER_PORT=7077
-      - SPARK_WORKER_CORES=10
-      - SPARK_WORKER_MEMORY=16g
+      - SPARK_WORKER_CORES=15
+      - SPARK_WORKER_MEMORY=24g
 #    deploy:
 #      replicas: 4
     networks:
@@ -132,6 +132,7 @@ services:
       - spark-logs:/opt/spark/spark-events
       - ./airflow-logs:/opt/airflow/logs
       - ./etl:/opt/airflow/etl
+      - ./etl:/opt/***/etl
       - ./tests:/opt/airflow/tests
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
@@ -158,6 +159,7 @@ services:
       - spark-logs:/opt/spark/spark-events
       - ./airflow-logs:/opt/airflow/logs
       - ./etl:/opt/airflow/etl
+      - ./etl:/opt/***/etl
       - ./tests:/opt/airflow/tests
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor

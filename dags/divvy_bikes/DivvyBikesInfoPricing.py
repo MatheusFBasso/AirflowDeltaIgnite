@@ -72,8 +72,11 @@ with DAG(
                 driver_memory='5G',
                 executor_memory='5G',
                 conf={
-                    'spark.sql.debug.maxToStringFields': '1000',
+                    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                    "spark.sql.debug.maxToStringFields": "1000"
                 },
+                packages="io.delta:delta-spark_2.13:4.0.0",
                 name=f'divvy-bronze-{extraction["id"]}',
                 verbose=False,
                 application_args=[extraction['id']],
@@ -90,8 +93,11 @@ with DAG(
                 driver_memory='5G',
                 executor_memory='5G',
                 conf={
-                    'spark.sql.debug.maxToStringFields': '1000',
+                    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                    "spark.sql.debug.maxToStringFields": "1000"
                 },
+                packages="io.delta:delta-spark_2.13:4.0.0",
                 name=f'divvy-silver-{extraction["id"]}',
                 verbose=False,
                 application_args=['silver_' + extraction['id']],
@@ -109,8 +115,11 @@ with DAG(
                 driver_memory='5G',
                 executor_memory='5G',
                 conf={
-                    'spark.sql.debug.maxToStringFields': '1000',
+                    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                    "spark.sql.debug.maxToStringFields": "1000"
                 },
+                packages="io.delta:delta-spark_2.13:4.0.0",
                 name=f'divvy-gold-{extraction["id"]}',
                 verbose=False,
                 application_args=['gold_' + extraction['id']],

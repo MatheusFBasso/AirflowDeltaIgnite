@@ -1,38 +1,36 @@
-# AirflowDeltaIgnite  
+# AirflowDeltaIgnite
 **A containerized data engineering platform with Apache Airflow, Spark, and Delta Lake**
 
-![AirflowDeltaIgnite](https://img.shields.io/badge/Airflow-2.10.2-blue)  
-![Spark](https://img.shields.io/badge/Spark-3.5.7-green)  
-![Delta Lake](https://img.shields.io/badge/Delta_Lake-3.3.2-purple)  
-![Python](https://img.shields.io/badge/Python-3.11-yellow)  
-![ARM64 Native](https://img.shields.io/badge/ARM64-Native-success)
+![Airflow-2.10.2](https://img.shields.io/badge/Airflow-2.10.2-blue)
+![Spark-4.0.1](https://img.shields.io/badge/Spark-4.0.1-green)
+![Delta Lake-4.0.0](https://img.shields.io/badge/Delta_Lake-4.0.0-purple)
+![Python-3.12](https://img.shields.io/badge/Python-3.12-yellow)
 
 ---
 
 ## Overview
 
-**AirflowDeltaIgnite** is a fully containerized, modular data engineering platform designed for local development on **macOS (Apple Silicon)**. It integrates:
+**AirflowDeltaIgnite** is a fully containerized, modular data engineering platform designed for local development. It integrates:
 
-- **Apache Airflow 2.10.2** – Orchestrates ETL workflows via DAGs.
-- **Apache Spark 3.5.7** – Distributed processing with standalone cluster.
-- **Delta Lake 3.3.2** – ACID-compliant data lake with schema enforcement and time travel.
-- **Jupyter Lab** – Interactive PySpark/Delta exploration.
+- **Apache Airflow** to orchestrate ETL workflows.
+- **Apache Spark** for distributed data processing.
+- **Delta Lake** for reliable and ACID-compliant data storage.
+- **Jupyter Lab** for interactive data exploration.
 
-Built for **multi-project ETL pipelines** (e.g., Divvy Bikes, Brewery), it follows the **Medallion architecture** (raw → bronze → silver → gold) with data quality checks and real-time API ingestion.
+This platform is built to handle multi-project ETL pipelines using the Medallion architecture (raw → bronze → silver → gold), complete with data quality checks and real-time API ingestion.
 
 ---
 
 ## Key Features
 
 | Feature | Description |
-|-------|-----------|
-| **Medallion Architecture** | Layered data processing: raw (API landing), bronze (partitioned), silver (cleaned), gold (aggregated). |
-| **Multi-Project Support** | Modular structure for multiple datasets in one Airflow instance. |
-| **ARM64 Native** | Optimized for Apple Silicon (M1/M2/M3) – no emulation. |
-| **Log Reduction** | Spark logs set to `WARN`, Ivy/NativeCodeLoader warnings suppressed. |
-| **Automated Setup** | Spark connection (`spark_conn`) created at Airflow init. |
-| **Pre-installed Delta JARs** | No runtime downloads – faster, cleaner logs. |
-| **Jupyter Lab** | Interactive PySpark/Delta notebooks at `localhost:8888`. |
+|---|---|
+| **Medallion Architecture** | Layered data processing from raw landing to aggregated gold tables. |
+| **Multi-Project Support** | Modular structure to support multiple, isolated datasets in one Airflow instance. |
+| **Cross-Platform** | Runs on any system with Docker, including Windows, macOS, and Linux. |
+| **Automated Setup** | The Spark connection is automatically created when Airflow initializes. |
+| **Pre-installed Dependencies** | Delta JARs are pre-installed to ensure faster startup and cleaner logs. |
+| **Jupyter Lab Integration** | Interactive PySpark and Delta notebooks available at `localhost:8888`. |
 
 ---
 
@@ -40,239 +38,118 @@ Built for **multi-project ETL pipelines** (e.g., Divvy Bikes, Brewery), it follo
 
 ```
 AirflowDeltaIgnite/
-├── .env                    # Env vars: SPARK_VERSION=3.5.7, DELTA_VERSION=3.3.2, AIRFLOW_VERSION=2.10.2, PYTHON_VERSION=3.11, AIRFLOW_UID=501
-│
-├── Dockerfile              # Spark + Delta + Jupyter (Python 3.11, ARM64)
-│
-├── Dockerfile.airflow      # Airflow + Spark provider (Python 3.11, ARM64)
-│
-├── docker-compose.yml      # Defines services, volumes, spark-airflow-net network
-│
-├── entrypoint.sh           # Spark startup script (master/worker/history)
-│
-├── requirements.txt        # Airflow deps: apache-airflow==2.10.2, apache-airflow-providers-apache-spark==4.11.0, pyspark, delta-spark
-│
-├── README.md               # Setup, running instructions, adding projects
-│
-├── conf/                   # Spark configurations
-│   ├── spark-defaults.conf # Spark settings (log4j WARN, Delta extensions)
-│   └── log4j2.properties   # Custom Log4j (WARN, suppresses Ivy/NativeCodeLoader)
-│
-│   
-├── data/                   # Persistent Delta Tables (raw/bronze/silver/gold)
-│   │
-│   ├── raw_data/           # API landing (e.g., divvy_bikes/free_bike_status/)
-│   │   ├── divvy_bikes/
-│   │   ├── olist/
-│   │   └── brewery/
-│   │
-│   └── warehouse/
-│       │
-│       ├── bronze.db/
-│       │   ├── olist/
-│       │   ├── olist_customers_dataset
-│       │   ├── olist_geolocation_dataset
-│       │   ├── olist_order_items_dataset
-│       │   ├── olist_order_payments_dataset
-│       │   ├── olist_order_reviews_dataset
-│       │   ├── olist_orders_dataset
-│       │   ├── olist_products_dataset
-│       │   ├── olist_sellers_dataset
-│       │   └── product_category_name_translation
-│       │
-│       ├── silver.db/
-│       │   ├── divvy_bikes_status/
-│       │   ├── divvy_station_information/
-│       │   ├── divvy_station_status/
-│       │   ├── divvy_system_pricing_plan/
-│       │   ├── divvy_vehicle_types/
-│       │   ├── olist_customers_dataset
-│       │   ├── olist_geolocation_dataset
-│       │   ├── olist_order_items_dataset
-│       │   ├── olist_order_payments_dataset
-│       │   ├── olist_order_reviews_dataset
-│       │   ├── olist_orders_dataset
-│       │   ├── olist_products_dataset
-│       │   ├── olist_sellers_dataset
-│       │   └── olist_product_category_name_translation
-│       │
-│       └── gold.db/
-│           ├── divvy_bikes_status/
-│           ├── divvy_station_information/
-│           ├── divvy_station_status/
-│           ├── divvy_system_pricing_plan/
-│           ├── divvy_vehicle_types/
-│           ├── olist_delivery_time_table
-│           └── olist_sellers_performance
-│
-├── dags/                   # Airflow DAGs
-│   ├── __init__.py         # Makes dags a Python package
-│   ├── common/
-│   ├── divvy_bikes/
-│   ├── olist/
-│   └── brewery/
-│
-├── etl/                    # ETL Python code
-│   ├── common/
-│   │   ├── __init__.py
-│   │   ├── utils.py        # Spark session, data quality checks
-│   │   └── DeltaSpark.py  # Shared transforms (e.g., dedup)
-│   │
-│   ├── divvy_bikes/
-│   │   ├── transformations/
-│   │   │   ├── __init__.py
-│   │   │   ├── bronze.py
-│   │   │   ├── bronze_to_delta.py
-│   │   │   ├── gold.py
-│   │   │   ├── gold_to_delta.py
-│   │   │   ├── silver.py
-│   │   │   └── silver_to_delta.py
-│   │   │
-│   │   ├── apis/
-│   │   │   ├── __init__.py
-│   │   │   └── divvy_api.py   # API fetching (requests)
-│   │   │
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       ├── classes_call.py
-│   │       ├── logo.py
-│   │       └── paths.py
-│   │
-│   ├── olist/
-│   │   ├── transformations/
-│   │   │   ├── __init__.py
-│   │   │   ├── bronze.py
-│   │   │   ├── bronze_to_delta.py
-│   │   │   ├── gold.py
-│   │   │   ├── gold_to_delta.py
-│   │   │   ├── silver.py
-│   │   │   └── silver_to_delta.py
-│   │   │
-│   │   ├── apis/
-│   │   │   ├── __init__.py
-│   │   │   └── olist_api.py   # API fetching (requests)
-│   │   │
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       ├── classes_call.py
-│   │       ├── logo.py
-│   │       └── paths.py
-│   │
-│   └── brewery/
-│       ├── transformations/
-│       │   ├── __init__.py
-│       │   ├── bronze.py
-│       │   ├── bronze_to_delta.py
-│       │   ├── gold.py
-│       │   ├── gold_to_delta.py
-│       │   ├── silver.py
-│       │   └── silver_to_delta.py
-│       │
-│       ├── apis/
-│       │   ├── __init__.py
-│       │   └── brewery_api.py   # API fetching (requests)
-│       │
-│       └── utils/
-│           ├── __init__.py
-│           ├── classes_call.py
-│           ├── logo.py
-│           └── paths.py
-│
-│   
-├── tests/                  # Unit/integration tests (pytest)
-│   ├── common/
-│   │   └── test_utils.py
-│   ├── divvy_bikes/
-│   │   └── test_etl.py
-│   └── brewery/
-│       └── test_etl.py
-│
-├── airflow-logs/           # Airflow/Spark log redirection
-│
-└── notebooks/             # Jupyter notebooks for ad-hoc analysis
+├── conf/                   # Spark configurations (log4j, defaults)
+├── dags/                   # Airflow DAGs for each project
+├── data/                   # Persistent Delta Lake tables (Medallion architecture)
+├── etl/                    # ETL Python code (transformations, API clients)
+├── notebooks/              # Jupyter notebooks for analysis
+├── tests/                  # Pytest unit and integration tests
+├── .env                    # Environment variables for Docker Compose
+├── docker-compose.yml      # Defines all services and infrastructure
+└── README.md               # This file
 ```
 
 ---
 
-## Airflow + Spark + Delta Lake Integration
+## Delta Lake Warehouse Structure
 
-### How It Works
+The data is organized into a Medallion architecture with three layers:
 
-1. **Airflow DAGs** (`dags/`) use `SparkSubmitOperator` to submit PySpark jobs.
-2. **Spark Cluster** (`spark-master`, `spark-worker`) runs in client mode:
-   - Driver: Airflow scheduler container
-   - Executors: Spark worker(s)
-3. **Delta Lake** enables:
-   - ACID transactions
-   - Schema enforcement
-   - Time travel (`VERSION AS OF`)
-4. **ETL Scripts** (`etl/`) use shared `get_spark_session()` with Delta configs.
-5. **Data Quality** checks run in silver layer (nulls, uniqueness).
-6. **Logs** are minimized via:
-   - `verbose=False` in `SparkSubmitOperator`
-   - Log4j `WARN` level
-   - Pre-installed Delta JARs (no Ivy spam)
+```
+data/
+└── warehouse/
+    ├── bronze.db/
+    │   ├── divvy_bikes
+    │   ├── ghibli_films
+    │   ├── ghibli_locations
+    │   ├── ghibli_people
+    │   ├── ghibli_species
+    │   ├── ghibli_vehicles
+    │   ├── olist_customers_dataset
+    │   ├── olist_geolocation_dataset
+    │   ├── olist_order_items_dataset
+    │   ├── olist_order_payments_dataset
+    │   ├── olist_order_reviews_dataset
+    │   ├── olist_orders_dataset
+    │   ├── olist_products_dataset
+    │   ├── olist_sellers_dataset
+    │   └── olist_product_category_name_translation
+    │
+    ├── silver.db/
+    │   ├── brewery
+    │   ├── brewery_daily
+    │   ├── divvy_bikes_status
+    │   ├── divvy_station_information
+    │   ├── divvy_station_status
+    │   ├── divvy_system_pricing_plan
+    │   ├── divvy_vehicle_types
+    │   ├── ghibli_films
+    │   ├── ghibli_locations
+    │   ├── ghibli_people
+    │   ├── ghibli_species
+    │   ├── ghibli_vehicles
+    │   ├── olist_customers_dataset
+    │   ├── olist_geolocation_dataset
+    │   ├── olist_order_items_dataset
+    │   ├── olist_order_payments_dataset
+    │   ├── olist_order_reviews_dataset
+    │   ├── olist_orders_dataset
+    │   ├── olist_products_dataset
+    │   ├── olist_sellers_dataset
+    │   └── olist_product_category_name_translation
+    │
+    └── gold.db/
+        ├── countries_brewery_type_num
+        ├── divvy_bikes_status
+        ├── divvy_station_information
+        ├── divvy_station_status
+        ├── divvy_system_pricing_plan
+        ├── divvy_vehicle_types
+        ├── olist_delivery_time_table
+        └── olist_sellers_performance
+```
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- Docker Desktop (with Rosetta for ARM64)
-- macOS (Apple Silicon recommended)
+- Docker Desktop
+- Git
 
 ### Quick Start
 
 ```bash
-# Clone and start
+# 1. Clone the repository
 git clone https://github.com/yourusername/AirflowDeltaIgnite.git
 cd AirflowDeltaIgnite
+
+# 2. Build and start the services
 docker compose up --build -d
 
-# Access UIs
-- Airflow: http://localhost:8082 (airflow/airflow)
+# 3. Access the UIs
+- Airflow: http://localhost:8082 (login: airflow/airflow)
 - Spark Master: http://localhost:8080
-- Jupyter: http://localhost:8888
+- Jupyter Lab: http://localhost:8888
 ```
 
 ### Run a DAG
-1. Go to Airflow UI → DAGs → `divvy_bikes_ingestion`
-2. Trigger → Check logs and `./data` for Delta tables.
+1.  Go to the Airflow UI → **DAGs**.
+2.  Find a DAG (e.g., `divvy_bikes_ingestion`) and un-pause it.
+3.  Trigger the DAG and monitor its execution.
+4.  Check the `./data/warehouse` directory to see the created Delta tables.
 
 ---
 
 ## Adding a New Project
 
-1. Duplicate `dags/divvy_bikes/` → `dags/new_project/`
-2. Duplicate `etl/divvy_bikes/` → `etl/new_project/`
-3. Add config in `config/new_project_config.yaml`
-4. Restart Airflow: `docker compose restart airflow-scheduler`
-
----
-
-## Examples
-
-### Divvy Bikes
-<img width="2477" height="666" alt="image" src="https://github.com/user-attachments/assets/6d330514-761a-4ce7-8b01-0270dd6d9928" />
-
-#### Extract
-<img width="1124" height="577" alt="image" src="https://github.com/user-attachments/assets/c5e175c7-48d7-4331-8336-3edb615c70d8" />
-
-#### Bronze
-<img width="1114" height="854" alt="image" src="https://github.com/user-attachments/assets/89b15ecf-ac86-4a0b-89af-e232b0f0e5c8" />
-
-#### Silver
-<img width="1002" height="824" alt="image" src="https://github.com/user-attachments/assets/6ad91df3-db89-45be-9421-b9dfea1d350b" />
-
-#### Gold
-<img width="1002" height="758" alt="image" src="https://github.com/user-attachments/assets/26df5a86-4551-4566-915d-0e3074894907" />
+1.  **Duplicate Structure**: Copy an existing project's folders in `dags/` and `etl/`.
+2.  **Customize Logic**: Modify the DAG and ETL scripts in the new folders for your project's needs.
+3.  **Restart Airflow**: The new DAG will appear automatically. If you make changes to files outside the `dags` folder, restart the relevant service.
+    `docker compose restart airflow-scheduler airflow-webserver`
 
 ---
 
 ## License
 
-MIT
-
----
-
-**AirflowDeltaIgnite** – Ignite your data pipelines with Airflow, Spark, and Delta Lake.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

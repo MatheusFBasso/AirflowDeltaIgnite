@@ -62,8 +62,11 @@ with DAG(
             driver_memory='10G',
             executor_memory='10G',
             conf={
-                'spark.sql.debug.maxToStringFields': '1000',
+                "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                "spark.sql.debug.maxToStringFields": "1000"
             },
+            packages="io.delta:delta-spark_2.13:4.0.0",
             name=f'olist-bronze-data',
             verbose=False,
             application_args=['olist_bronze'],
@@ -86,8 +89,11 @@ with DAG(
                 driver_memory='8G',
                 executor_memory='8G',
                 conf={
-                    'spark.sql.debug.maxToStringFields': '1000',
+                    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                    "spark.sql.debug.maxToStringFields": "1000"
                 },
+                packages="io.delta:delta-spark_2.13:4.0.0",
                 name=f'divvy-silver-{table}',
                 verbose=False,
                 application_args=[table],
@@ -106,8 +112,11 @@ with DAG(
                 driver_memory='8G',
                 executor_memory='8G',
                 conf={
-                    'spark.sql.debug.maxToStringFields': '1000',
+                    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+                    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                    "spark.sql.debug.maxToStringFields": "1000"
                 },
+                packages="io.delta:delta-spark_2.13:4.0.0",
                 name=f'divvy-gold-{table}',
                 verbose=False,
                 application_args=[table],

@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y curl default-jre procps && \
 ENV SPARK_HOME=/opt/spark
 ENV PATH=$PATH:${SPARK_HOME}/bin:${SPARK_HOME}/sbin
 ENV PYTHONPATH=${SPARK_HOME}/python:${SPARK_HOME}/python/lib/py4j-0.10.9.7-src.zip:$PYTHONPATH
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 RUN pip install --no-cache-dir pyspark==${SPARK_VERSION} delta-spark==${DELTA_VERSION} jupyterlab
 
@@ -31,4 +31,4 @@ COPY conf ${SPARK_HOME}/conf
 COPY conf/log4j2.properties ${SPARK_HOME}/conf/log4j2.properties
 COPY entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
